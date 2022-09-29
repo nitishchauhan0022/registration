@@ -23,6 +23,8 @@ import (
 	clusterlisterv1beta1 "open-cluster-management.io/api/client/cluster/listers/cluster/v1beta1"
 	v1 "open-cluster-management.io/api/cluster/v1"
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
+	"go.opentelemetry.io/otel"
+
 )
 
 // managedClusterSetController reconciles instances of ManagedClusterSet on the hub.
@@ -109,6 +111,8 @@ func NewManagedClusterSetController(
 }
 
 func (c *managedClusterSetController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterSetController").Start(ctx,"Managed Cluster Set Controller")
+	defer span.End()
 	clusterSetName := syncCtx.QueueKey()
 	if len(clusterSetName) == 0 {
 		return nil
@@ -137,6 +141,8 @@ func (c *managedClusterSetController) sync(ctx context.Context, syncCtx factory.
 
 // syncClusterSet syncs a particular cluster set
 func (c *managedClusterSetController) syncClusterSet(ctx context.Context, originalClusterSet *clusterv1beta1.ManagedClusterSet) error {
+	ctx,span:=otel.Tracer("managedClusterSetController").Start(ctx,"sync Cluster Set")
+	defer span.End()
 	clusterSet := originalClusterSet.DeepCopy()
 	clusters, err := clusterv1beta1.GetClustersFromClusterSet(clusterSet, c.clusterLister)
 	if err != nil {

@@ -38,6 +38,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	"open-cluster-management.io/registration/pkg/tracing"
+
 )
 
 const (
@@ -348,7 +350,13 @@ func (o *SpokeAgentOptions) RunSpokeAgent(ctx context.Context, controllerContext
 			controllerContext.EventRecorder,
 		)
 	}
-
+	otelCollectorAddonController := tracing.NewOtelCollectorAddonController(
+		"OCM - Registration Spoke",
+		o.ClusterName,
+		addOnClient,
+		addOnInformerFactory.Addon().V1alpha1().ManagedClusterAddOns(),
+		controllerContext.EventRecorder,
+	)
 	var addOnLeaseController factory.Controller
 	var addOnRegistrationController factory.Controller
 	if features.DefaultSpokeMutableFeatureGate.Enabled(ocmfeature.AddonManagement) {
@@ -384,6 +392,7 @@ func (o *SpokeAgentOptions) RunSpokeAgent(ctx context.Context, controllerContext
 	go spokeClusterInformerFactory.Start(ctx.Done())
 	go addOnInformerFactory.Start(ctx.Done())
 
+	go otelCollectorAddonController.Run(ctx, 1)
 	go clientCertForHubController.Run(ctx, 1)
 	go managedClusterJoiningController.Run(ctx, 1)
 	go managedClusterLeaseController.Run(ctx, 1)

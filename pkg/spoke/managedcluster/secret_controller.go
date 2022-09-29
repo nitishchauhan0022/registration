@@ -19,6 +19,8 @@ import (
 	corev1informers "k8s.io/client-go/informers/core/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/klog/v2"
+	"go.opentelemetry.io/otel"
+
 )
 
 // hubKubeconfigSecretController watches the HubKubeconfig secret, if the secret is changed, this controller creates/updates the
@@ -66,6 +68,8 @@ func NewHubKubeconfigSecretController(
 }
 
 func (s *hubKubeconfigSecretController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("hubKubeconfigSecretController").Start(ctx,"Managed Cluster - hubKubeconfigSecretController")
+	defer span.End()
 	klog.V(4).Infof("Reconciling Hub KubeConfig secret %q", s.hubKubeconfigSecretName)
 	return DumpSecret(s.spokeCoreClient, s.hubKubeconfigSecretNamespace, s.hubKubeconfigSecretName, s.hubKubeconfigDir, ctx, syncCtx.Recorder())
 }
@@ -78,6 +82,8 @@ func DumpSecret(
 	secretNamespace, secretName, outputDir string,
 	ctx context.Context,
 	recorder events.Recorder) error {
+	ctx,span:=otel.Tracer("hubKubeconfigSecretController").Start(ctx,"DumpSecret")
+	defer span.End()
 	secret, err := coreV1Client.Secrets(secretNamespace).Get(ctx, secretName, metav1.GetOptions{})
 	if errors.IsNotFound(err) {
 		return nil

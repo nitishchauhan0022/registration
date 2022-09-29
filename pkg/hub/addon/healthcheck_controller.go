@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"go.opentelemetry.io/otel"
 )
 
 const addOnAvailableConditionType = "Available" //TODO add this to ManagedClusterAddOn api
@@ -53,6 +54,8 @@ func NewManagedClusterAddOnHealthCheckController(addOnClient addonclient.Interfa
 }
 
 func (c *managedClusterAddOnHealthCheckController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterAddOnHealthCheckController").Start(ctx,"Addon - HealthCheckController")
+	defer span.End()
 	managedClusterName := syncCtx.QueueKey()
 	managedCluster, err := c.clusterLister.Get(managedClusterName)
 	if errors.IsNotFound(err) {

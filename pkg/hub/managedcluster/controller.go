@@ -24,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
+	"go.opentelemetry.io/otel"
+
 )
 
 const (
@@ -72,6 +74,8 @@ func NewManagedClusterController(
 }
 
 func (c *managedClusterController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterController").Start(ctx,"Managed Cluster Controller")
+	defer span.End()
 	managedClusterName := syncCtx.QueueKey()
 	klog.V(4).Infof("Reconciling ManagedCluster %s", managedClusterName)
 	managedCluster, err := c.clusterLister.Get(managedClusterName)
@@ -195,6 +199,8 @@ func (c *managedClusterController) sync(ctx context.Context, syncCtx factory.Syn
 }
 
 func (c *managedClusterController) removeManagedClusterResources(ctx context.Context, managedClusterName string) error {
+	ctx,span:=otel.Tracer("managedClusterController").Start(ctx,"Remove Managed Cluster Resources")
+	defer span.End()
 	errs := []error{}
 	// Clean up managed cluster manifests
 	assetFn := helpers.ManagedClusterAssetFn(manifestFiles, managedClusterName)
@@ -205,6 +211,8 @@ func (c *managedClusterController) removeManagedClusterResources(ctx context.Con
 }
 
 func (c *managedClusterController) removeManagedClusterFinalizer(ctx context.Context, managedCluster *v1.ManagedCluster) error {
+	ctx,span:=otel.Tracer("managedClusterController").Start(ctx,"Remove Managed Cluster Finalizer")
+	defer span.End()
 	copiedFinalizers := []string{}
 	for i := range managedCluster.Finalizers {
 		if managedCluster.Finalizers[i] == managedClusterFinalizer {

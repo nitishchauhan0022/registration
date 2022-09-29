@@ -28,6 +28,8 @@ import (
 	"k8s.io/klog/v2"
 	"open-cluster-management.io/registration/pkg/features"
 	"open-cluster-management.io/registration/pkg/helpers"
+	"open-cluster-management.io/registration/pkg/tracing"
+
 )
 
 const (
@@ -219,7 +221,8 @@ func (c *clientCertificateController) sync(ctx context.Context, syncCtx factory.
 	case err != nil:
 		return fmt.Errorf("unable to get secret %q: %w", c.SecretNamespace+"/"+c.SecretName, err)
 	}
-
+	ctx,span :=tracing.SpanFromObject(ctx,"clientCertificateController","clientCertificateController - Sync",secret)
+	defer span.End()
 	// reconcile pending csr if exists
 	if len(c.csrName) > 0 {
 		// build a secret data map if the csr is approved
@@ -361,6 +364,12 @@ func (c *clientCertificateController) sync(ctx context.Context, syncCtx factory.
 	if err != nil {
 		return fmt.Errorf("unable to generate certificate request: %w", err)
 	}
+	annotations:=c.ObjectMeta.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	tracing.TraceToAnnotation(ctx,annotations)
+	c.ObjectMeta.SetAnnotations(annotations)
 	createdCSRName, err := c.csrControl.create(ctx, syncCtx.Recorder(), c.ObjectMeta, csrData, c.SignerName)
 	if err != nil {
 		return err

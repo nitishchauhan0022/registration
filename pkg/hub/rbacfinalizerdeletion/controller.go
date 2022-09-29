@@ -25,6 +25,8 @@ import (
 	rbacv1listers "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
+	"go.opentelemetry.io/otel"
+
 )
 
 const (
@@ -72,6 +74,8 @@ func NewFinalizeController(
 }
 
 func (m *finalizeController) sync(ctx context.Context, controllerContext factory.SyncContext) error {
+	ctx,span:=otel.Tracer("finalizeController").Start(ctx,"Rbac Finalize Controller")
+	defer span.End()
 	key := controllerContext.QueueKey()
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -104,6 +108,8 @@ func (m *finalizeController) sync(ctx context.Context, controllerContext factory
 
 func (m *finalizeController) syncRoleAndRoleBinding(ctx context.Context, controllerContext factory.SyncContext,
 	role *rbacv1.Role, rolebinding *rbacv1.RoleBinding, ns *corev1.Namespace, cluster *clusterv1.ManagedCluster) error {
+	ctx,span:=otel.Tracer("finalizeController").Start(ctx,"Sync Role And RoleBinding")
+	defer span.End()
 	// Skip if neither role nor rolebinding has the finalizer
 	if !hasFinalizer(role, manifestWorkFinalizer) && !hasFinalizer(rolebinding, manifestWorkFinalizer) {
 		return nil
@@ -155,6 +161,8 @@ func (m *finalizeController) getRoleAndRoleBinding(namespace, name string) (*rba
 
 // removeFinalizerFromRole removes the particular finalizer from role
 func (m *finalizeController) removeFinalizerFromRole(ctx context.Context, role *rbacv1.Role, finalizer string) error {
+	ctx,span:=otel.Tracer("finalizeController").Start(ctx,"Remove Finalizer From Role")
+	defer span.End()
 	if role == nil {
 		return nil
 	}
@@ -170,6 +178,8 @@ func (m *finalizeController) removeFinalizerFromRole(ctx context.Context, role *
 
 // removeFinalizerFromRoleBinding removes the particular finalizer from rolebinding
 func (m *finalizeController) removeFinalizerFromRoleBinding(ctx context.Context, rolebinding *rbacv1.RoleBinding, finalizer string) error {
+	ctx,span:=otel.Tracer("finalizeController").Start(ctx,"Remove Finalizer From RoleBinding")
+	defer span.End()
 	if rolebinding == nil {
 		return nil
 	}

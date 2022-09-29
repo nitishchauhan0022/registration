@@ -21,6 +21,8 @@ import (
 	discovery "k8s.io/client-go/discovery"
 	corev1informers "k8s.io/client-go/informers/core/v1"
 	corev1lister "k8s.io/client-go/listers/core/v1"
+	"go.opentelemetry.io/otel"
+
 )
 
 // managedClusterStatusController checks the kube-apiserver health on managed cluster to determine it whether is available
@@ -60,6 +62,8 @@ func NewManagedClusterStatusController(
 // sync updates managed cluster available condition by checking kube-apiserver health on managed cluster.
 // if the kube-apiserver is health, it will ensure that managed cluster resources and version are up to date.
 func (c *managedClusterStatusController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterStatusController").Start(ctx,"Managed Cluster - StatusController")
+	defer span.End()
 	if _, err := c.hubClusterLister.Get(c.clusterName); err != nil {
 		return fmt.Errorf("unable to get managed cluster %q from hub: %w", c.clusterName, err)
 	}
@@ -102,6 +106,8 @@ func (c *managedClusterStatusController) sync(ctx context.Context, syncCtx facto
 
 // using readyz api to check the status of kube apiserver
 func (c *managedClusterStatusController) checkKubeAPIServerStatus(ctx context.Context) metav1.Condition {
+	ctx,span:=otel.Tracer("managedClusterStatusController").Start(ctx,"Check kube API Server Status")
+	defer span.End()
 	statusCode := 0
 	condition := metav1.Condition{Type: clusterv1.ManagedClusterConditionAvailable}
 	result := c.managedClusterDiscoveryClient.RESTClient().Get().AbsPath("/livez").Do(ctx).StatusCode(&statusCode)

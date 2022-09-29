@@ -23,6 +23,8 @@ import (
 	addonlisterv1alpha1 "open-cluster-management.io/api/client/addon/listers/addon/v1alpha1"
 	"open-cluster-management.io/registration/pkg/clientcert"
 	"open-cluster-management.io/registration/pkg/helpers"
+	"go.opentelemetry.io/otel"
+
 )
 
 // addOnRegistrationController monitors ManagedClusterAddOns on hub and starts addOn registration
@@ -90,12 +92,13 @@ func NewAddOnRegistrationController(
 }
 
 func (c *addOnRegistrationController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("addOnRegistrationController").Start(ctx,"AddOn - RegistrationController")
+	defer span.End()
 	queueKey := syncCtx.QueueKey()
 	if queueKey != factory.DefaultQueueKey {
 		// sync a particular addOn
 		return c.syncAddOn(ctx, syncCtx, queueKey)
 	}
-
 	// handle resync
 	errs := []error{}
 	for addOnName := range c.addOnRegistrationConfigs {
@@ -117,6 +120,8 @@ func (c *addOnRegistrationController) sync(ctx context.Context, syncCtx factory.
 }
 
 func (c *addOnRegistrationController) syncAddOn(ctx context.Context, syncCtx factory.SyncContext, addOnName string) error {
+	ctx,span:=otel.Tracer("addOnRegistrationController").Start(ctx,"addOnRegistrationController - syncAddOn")
+	defer span.End()
 	klog.V(4).Infof("Reconciling addOn %q", addOnName)
 
 	addOn, err := c.hubAddOnLister.ManagedClusterAddOns(c.clusterName).Get(addOnName)
@@ -177,6 +182,8 @@ func (c *addOnRegistrationController) syncAddOn(ctx context.Context, syncCtx fac
 
 // startRegistration starts a client certificate controller with the given config
 func (c *addOnRegistrationController) startRegistration(ctx context.Context, config registrationConfig) context.CancelFunc {
+	ctx,span:=otel.Tracer("addOnRegistrationController").Start(ctx,"addOnRegistrationController - startRegistration")
+	defer span.End()
 	ctx, stopFunc := context.WithCancel(ctx)
 
 	// the kubeClient here will be used to generate the hub kubeconfig secret for addon agents, it generates the secret
@@ -257,6 +264,8 @@ func (c *addOnRegistrationController) generateStatusUpdate(clusterName, addonNam
 
 // stopRegistration stops the client certificate controller for the given config
 func (c *addOnRegistrationController) stopRegistration(ctx context.Context, config registrationConfig) error {
+	ctx,span:=otel.Tracer("addOnRegistrationController").Start(ctx,"addOnRegistrationController - stopRegistration")
+	defer span.End()
 	if config.stopFunc != nil {
 		config.stopFunc()
 	}
@@ -278,6 +287,8 @@ func (c *addOnRegistrationController) stopRegistration(ctx context.Context, conf
 
 // cleanup cleans both the registration configs and client certificate controllers for the addon
 func (c *addOnRegistrationController) cleanup(ctx context.Context, addOnName string) error {
+	ctx,span:=otel.Tracer("addOnRegistrationController").Start(ctx,"addOnRegistrationController - cleanup")
+	defer span.End()
 	errs := []error{}
 	for _, config := range c.addOnRegistrationConfigs[addOnName] {
 		if err := c.stopRegistration(ctx, config); err != nil {

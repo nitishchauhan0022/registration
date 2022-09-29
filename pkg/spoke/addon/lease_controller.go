@@ -22,6 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/clock"
 	coordv1client "k8s.io/client-go/kubernetes/typed/coordination/v1"
 	"k8s.io/client-go/tools/cache"
+	"go.opentelemetry.io/otel"
+
 )
 
 const leaseDurationTimes = 5
@@ -72,6 +74,8 @@ func NewManagedClusterAddOnLeaseController(clusterName string,
 }
 
 func (c *managedClusterAddOnLeaseController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterAddOnLeaseController").Start(ctx,"Addon - Lease Controller")
+	defer span.End()
 	queueKey := syncCtx.QueueKey()
 	if queueKey == factory.DefaultQueueKey {
 		addOns, err := c.addOnLister.ManagedClusterAddOns(c.clusterName).List(labels.Everything())
@@ -113,6 +117,8 @@ func (c *managedClusterAddOnLeaseController) syncSingle(ctx context.Context,
 	leaseNamespace string,
 	addOn *addonv1alpha1.ManagedClusterAddOn,
 	recorder events.Recorder) error {
+	ctx,span:=otel.Tracer("managedClusterAddOnLeaseController").Start(ctx,"syncSingle")
+	defer span.End()
 	now := c.clock.Now()
 	gracePeriod := time.Duration(leaseDurationTimes*AddOnLeaseControllerLeaseDurationSeconds) * time.Second
 

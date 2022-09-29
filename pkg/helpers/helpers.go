@@ -37,8 +37,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/util/retry"
+	"go.opentelemetry.io/otel"
 )
-
 var (
 	genericScheme = runtime.NewScheme()
 	genericCodecs = serializer.NewCodecFactory(genericScheme)
@@ -56,6 +56,8 @@ func UpdateManagedClusterStatus(
 	client clusterclientset.Interface,
 	spokeClusterName string,
 	updateFuncs ...UpdateManagedClusterStatusFunc) (*clusterv1.ManagedClusterStatus, bool, error) {
+	ctx,span:=otel.Tracer("helper").Start(ctx,"UpdateManagedClusterStatus")
+	defer span.End()
 	updated := false
 	var updatedManagedClusterStatus *clusterv1.ManagedClusterStatus
 
@@ -126,6 +128,8 @@ func UpdateManagedClusterAddOnStatus(
 	client addonv1alpha1client.Interface,
 	addOnNamespace, addOnName string,
 	updateFuncs ...UpdateManagedClusterAddOnStatusFunc) (*addonv1alpha1.ManagedClusterAddOnStatus, bool, error) {
+	ctx,span:=otel.Tracer("helper").Start(ctx,"UpdateManagedClusterAddOnStatus")
+	defer span.End()
 	updated := false
 	var updatedAddOnStatus *addonv1alpha1.ManagedClusterAddOnStatus
 
@@ -242,6 +246,8 @@ func CleanUpManagedClusterManifests(
 	recorder events.Recorder,
 	assetFunc resourceapply.AssetFunc,
 	files ...string) error {
+	ctx,span:=otel.Tracer("helper").Start(ctx,"CleanUpManagedClusterManifests")
+	defer span.End()
 	errs := []error{}
 	for _, file := range files {
 		objectRaw, err := assetFunc(file)

@@ -22,6 +22,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	coordlisters "k8s.io/client-go/listers/coordination/v1"
 	"k8s.io/utils/pointer"
+	"go.opentelemetry.io/otel"
+
 )
 
 const leaseDurationTimes = 5
@@ -76,6 +78,8 @@ func NewClusterLeaseController(
 
 // sync checks the lease of each accepted cluster on hub to determine whether a managed cluster is available.
 func (c *leaseController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("leaseController").Start(ctx,"Lease Controller")
+	defer span.End()
 	clusters, err := c.clusterLister.List(labels.Everything())
 	if err != nil {
 		return nil

@@ -14,6 +14,8 @@ import (
 	listerv1 "open-cluster-management.io/api/client/cluster/listers/cluster/v1"
 	v1 "open-cluster-management.io/api/cluster/v1"
 	"open-cluster-management.io/registration/pkg/helpers"
+	"go.opentelemetry.io/otel"
+
 )
 
 var (
@@ -55,6 +57,8 @@ func NewTaintController(
 }
 
 func (c *taintController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("taintController").Start(ctx,"Taint Controller")
+	defer span.End()
 	managedClusterName := syncCtx.QueueKey()
 	klog.V(4).Infof("Reconciling ManagedCluster %s", managedClusterName)
 	managedCluster, err := c.clusterLister.Get(managedClusterName)

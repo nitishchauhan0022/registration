@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+	"open-cluster-management.io/registration/pkg/tracing"
 )
 
 var ResyncInterval = 5 * time.Minute
@@ -163,6 +164,12 @@ func RunControllerManager(ctx context.Context, controllerContext *controllercmd.
 		addOnInformers.Addon().V1alpha1().ManagedClusterAddOns(),
 		controllerContext.EventRecorder,
 	)
+	otelCollectorAddonControllerHub := tracing.NewOtelCollectorAddonControllerHub(
+		"OCM - Registration Hub",
+		addOnClient,
+		addOnInformers.Addon().V1alpha1().ClusterManagementAddOns(),
+		controllerContext.EventRecorder,
+	)
 
 	var defaultManagedClusterSetController, globalManagedClusterSetController factory.Controller
 	if features.DefaultHubMutableFeatureGate.Enabled(ocmfeature.DefaultClusterSet) {
@@ -183,6 +190,7 @@ func RunControllerManager(ctx context.Context, controllerContext *controllercmd.
 	go kubeInfomers.Start(ctx.Done())
 	go addOnInformers.Start(ctx.Done())
 
+	go otelCollectorAddonControllerHub.Run(ctx, 1)
 	go managedClusterController.Run(ctx, 1)
 	go taintController.Run(ctx, 1)
 	go csrController.Run(ctx, 1)

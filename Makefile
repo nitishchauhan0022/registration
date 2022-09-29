@@ -12,7 +12,7 @@ include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 	lib/tmp.mk \
 )
 
-IMAGE_REGISTRY?=quay.io/open-cluster-management
+IMAGE_REGISTRY?=docker.io/nitishchauhan0022
 IMAGE_TAG?=latest
 IMAGE_NAME?=$(IMAGE_REGISTRY)/registration:$(IMAGE_TAG)
 KUBECONFIG ?= ./.kubeconfig
@@ -89,7 +89,7 @@ deploy-spoke: ensure-kustomize
 	$(KUBECTL) config use-context $(SPOKE_KUBECONFIG_CONTEXT) --kubeconfig $(SPOKE_KUBECONFIG)
 	$(KUSTOMIZE) build deploy/spoke | $(KUBECTL) --kubeconfig $(SPOKE_KUBECONFIG) apply -f -
 	mv deploy/spoke/kustomization.yaml.tmp deploy/spoke/kustomization.yaml
-	$(KUBECTL) --kubeconfig $(SPOKE_KUBECONFIG) apply -f deploy/spoke/role_extension-apiserver.yaml 
+	$(KUBECTL) --kubeconfig $(SPOKE_KUBECONFIG) apply -f deploy/spoke/role_extension-apiserver.yaml
 	$(KUBECTL) --kubeconfig $(SPOKE_KUBECONFIG) apply -f deploy/spoke/role_binding_extension-apiserver.yaml
 
 clean-hub:

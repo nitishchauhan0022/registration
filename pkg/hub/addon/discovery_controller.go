@@ -24,6 +24,7 @@ import (
 	clientset "open-cluster-management.io/api/client/cluster/clientset/versioned"
 	clusterv1informer "open-cluster-management.io/api/client/cluster/informers/externalversions/cluster/v1"
 	clusterv1listers "open-cluster-management.io/api/client/cluster/listers/cluster/v1"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -75,6 +76,8 @@ func NewAddOnFeatureDiscoveryController(
 }
 
 func (c *addOnFeatureDiscoveryController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("addOnFeatureDiscoveryController").Start(ctx,"Addon - Discovery Controller")
+	defer span.End()
 	// The value of queueKey might be
 	// 1) equal to the default queuekey. It is triggered by resync every 10 minutes;
 	// 2) in format: namespace/name. It indicates the event source is a ManagedClusterAddOn;
@@ -108,6 +111,8 @@ func (c *addOnFeatureDiscoveryController) sync(ctx context.Context, syncCtx fact
 }
 
 func (c *addOnFeatureDiscoveryController) syncAddOn(ctx context.Context, clusterName, addOnName string) error {
+	ctx,span:=otel.Tracer("addOnFeatureDiscoveryController").Start(ctx,"sync AddOn")
+	defer span.End()
 	klog.V(4).Infof("Reconciling addOn %q", addOnName)
 
 	labels := map[string]string{}
@@ -152,6 +157,8 @@ func (c *addOnFeatureDiscoveryController) syncAddOn(ctx context.Context, cluster
 }
 
 func (c *addOnFeatureDiscoveryController) syncCluster(ctx context.Context, clusterName string) error {
+	ctx,span:=otel.Tracer("addOnFeatureDiscoveryController").Start(ctx,"sync Cluster")
+	defer span.End()
 	// sync all addon labels on the managed cluster
 	cluster, err := c.clusterLister.Get(clusterName)
 	if errors.IsNotFound(err) {

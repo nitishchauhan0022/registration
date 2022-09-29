@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	rbacv1informers "k8s.io/client-go/informers/rbac/v1"
 	"k8s.io/client-go/kubernetes"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -67,6 +68,8 @@ func NewManagedClusterClusterroleController(
 }
 
 func (c *clusterroleController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("clusterroleController").Start(ctx,"Cluster Role - Controller")
+	defer span.End()
 	managedClusters, err := c.clusterLister.List(labels.Everything())
 	if err != nil {
 		return err

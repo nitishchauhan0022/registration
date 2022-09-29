@@ -23,6 +23,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
+	"go.opentelemetry.io/otel"
+
 )
 
 const labelCustomizedOnly = "open-cluster-management.io/spoke-only"
@@ -64,6 +66,8 @@ func NewManagedClusterClaimController(
 
 // sync maintains the cluster claims in status of the managed cluster on hub once it joins the hub.
 func (c managedClusterClaimController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterClaimController").Start(ctx,"ManagedCluster - ClaimController")
+	defer span.End()
 	managedCluster, err := c.hubClusterLister.Get(c.clusterName)
 	if err != nil {
 		return fmt.Errorf("unable to get managed cluster with name %q from hub: %w", c.clusterName, err)
@@ -83,6 +87,8 @@ func (c managedClusterClaimController) sync(ctx context.Context, syncCtx factory
 // the total number of the claims exceeds the value of `cluster-claims-max`.
 func (c managedClusterClaimController) exposeClaims(ctx context.Context, syncCtx factory.SyncContext,
 	managedCluster *clusterv1.ManagedCluster) error {
+	ctx,span:=otel.Tracer("managedClusterClaimController").Start(ctx,"Expose Claims")
+	defer span.End()
 	reservedClaims := []clusterv1.ManagedClusterClaim{}
 	customClaims := []clusterv1.ManagedClusterClaim{}
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
+	"go.opentelemetry.io/otel"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	certificatesv1beta1 "k8s.io/api/certificates/v1beta1"
@@ -24,6 +25,7 @@ import (
 	"k8s.io/klog/v2"
 	"open-cluster-management.io/registration/pkg/helpers"
 	"open-cluster-management.io/registration/pkg/hub/user"
+	"open-cluster-management.io/registration/pkg/tracing"
 )
 
 const (
@@ -63,7 +65,8 @@ func (c *csrApprovingController) sync(ctx context.Context, syncCtx factory.SyncC
 	if err != nil {
 		return err
 	}
-
+	ctx,span:=tracing.SpanFromObject(ctx,"csrApprovingController","Csr Approving Controller",csr)
+	defer span.End()
 	csr = csr.DeepCopy()
 	// Current csr is in terminal state, do nothing.
 	if helpers.IsCSRInTerminalState(&csr.Status) {
@@ -107,6 +110,8 @@ func (c *csrApprovingController) sync(ctx context.Context, syncCtx factory.SyncC
 // Using SubjectAccessReview API to check whether a spoke agent has been authorized to renew its csr,
 // a spoke agent is authorized after its spoke cluster is accepted by hub cluster admin.
 func authorize(ctx context.Context, kubeClient kubernetes.Interface, csr csrInfo) (bool, error) {
+	ctx,span:=otel.Tracer("csrApprovingController").Start(ctx,"Authorize")
+	defer span.End()
 	sar := &authorizationv1.SubjectAccessReview{
 		Spec: authorizationv1.SubjectAccessReviewSpec{
 			User:   csr.username,

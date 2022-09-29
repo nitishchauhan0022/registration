@@ -16,6 +16,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"go.opentelemetry.io/otel"
+
 )
 
 // managedClusterJoiningController add the joined condition to a ManagedCluster on the managed cluster after it is accepted by hub cluster admin.
@@ -47,6 +49,8 @@ func NewManagedClusterJoiningController(
 // sync maintains the managed cluster side status of a ManagedCluster, it maintains the ManagedClusterJoined condition according to
 // the value of the ManagedClusterHubAccepted condition.
 func (c managedClusterJoiningController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterJoiningController").Start(ctx,"ManagedCluster - JoiningController")
+	defer span.End()
 	managedCluster, err := c.hubClusterLister.Get(c.clusterName)
 	if err != nil {
 		return fmt.Errorf("unable to get managed cluster with name %q from hub: %w", c.clusterName, err)

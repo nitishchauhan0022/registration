@@ -18,6 +18,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
+	"go.opentelemetry.io/otel"
+
 )
 
 const leaseUpdateJitterFactor = 0.25
@@ -55,6 +57,8 @@ func NewManagedClusterLeaseController(
 
 // sync starts a lease update routine with the managed cluster lease duration.
 func (c *managedClusterLeaseController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterLeaseController").Start(ctx,"managedClusterLeaseController - sync")
+	defer span.End()
 	cluster, err := c.hubClusterLister.Get(c.clusterName)
 	// unable to get managed cluster, make sure there is no lease update routine.
 	if err != nil {
@@ -97,6 +101,8 @@ type leaseUpdater struct {
 
 // start a lease update routine to update the lease of a managed cluster periodically.
 func (u *leaseUpdater) start(ctx context.Context, leaseDuration time.Duration) {
+	ctx,span:=otel.Tracer("leaseUpdater").Start(ctx,"Managed cluster - Lease Updater")
+	defer span.End()
 	u.lock.Lock()
 	defer u.lock.Unlock()
 
@@ -121,6 +127,8 @@ func (u *leaseUpdater) stop() {
 
 // update the lease of a given managed cluster.
 func (u *leaseUpdater) update(ctx context.Context) {
+	ctx,span:=otel.Tracer("leaseUpdater").Start(ctx,"Update")
+	defer span.End()
 	lease, err := u.hubClient.CoordinationV1().Leases(u.clusterName).Get(ctx, u.leaseName, metav1.GetOptions{})
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("unable to get cluster lease %q on hub cluster: %w", u.leaseName, err))

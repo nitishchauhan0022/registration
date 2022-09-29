@@ -22,6 +22,8 @@ import (
 	clusterinformerv1beta1 "open-cluster-management.io/api/client/cluster/informers/externalversions/cluster/v1beta1"
 	clusterlisterv1beta1 "open-cluster-management.io/api/client/cluster/listers/cluster/v1beta1"
 	clusterv1beta1 "open-cluster-management.io/api/cluster/v1beta1"
+	"go.opentelemetry.io/otel"
+
 )
 
 const (
@@ -133,6 +135,8 @@ func (c *managedClusterSetBindingController) enqueueBindingsByClusterSet(obj int
 }
 
 func (c *managedClusterSetBindingController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	ctx,span:=otel.Tracer("managedClusterSetBindingController").Start(ctx,"Managed Cluster Set Binding Controller")
+	defer span.End()
 	key := syncCtx.QueueKey()
 	if len(key) == 0 {
 		return nil
@@ -182,6 +186,8 @@ func (c *managedClusterSetBindingController) sync(ctx context.Context, syncCtx f
 }
 
 func (c *managedClusterSetBindingController) patchCondition(ctx context.Context, old, new *clusterv1beta1.ManagedClusterSetBinding) error {
+	ctx,span:=otel.Tracer("managedClusterSetBindingController").Start(ctx,"Patch Condition")
+	defer span.End()
 	if equality.Semantic.DeepEqual(old.Status.Conditions, new.Status.Conditions) {
 		return nil
 	}
